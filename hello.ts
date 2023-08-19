@@ -1,3 +1,3 @@
-hello_world(){
+export hello_world(){
     console.log( "Hello World" );
 }
