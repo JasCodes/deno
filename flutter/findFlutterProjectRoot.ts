@@ -1,50 +1,27 @@
-export async function findFlutterProjectRoot (): Promise<string | null>
+export function findFlutterProjectRoot ()
 {
-  const cwd = Deno.cwd();
-  for await ( const dirEntry of Deno.readDir( cwd ) )
+
+  let currentDir = Deno.cwd();
+  let previousDir = "";
+  let flutterProjectRoot: string | null = null;
+
+
+  while ( currentDir !== previousDir )
   {
-    if ( dirEntry.isDirectory )
+    const files = Deno.readDirSync( currentDir );
+
+    for ( const file of files )
     {
-      const flutterRoot = await findFlutterProjectRootRecursive(
-        `${ cwd }/${ dirEntry.name }`
-      );
-      if ( flutterRoot )
+      if ( file.name === "pubspec.yaml" )
       {
-        return flutterRoot;
+        flutterProjectRoot = currentDir;
+        break;
       }
     }
+
+    previousDir = currentDir;
+    currentDir = Deno.realPathSync( `${ currentDir }/..` );
   }
-  return null;
-}
 
-async function findFlutterProjectRootRecursive (
-  dirPath: string
-): Promise<string | null>
-{
-  for await ( const dirEntry of Deno.readDir( dirPath ) )
-  {
-    if ( dirEntry.name === "pubspec.yaml" )
-    {
-      return dirPath;
-    } else if ( dirEntry.isDirectory )
-    {
-      const flutterRoot = await findFlutterProjectRootRecursive(
-        `${ dirPath }/${ dirEntry.name }`
-      );
-      if ( flutterRoot )
-      {
-        return flutterRoot;
-      }
-    }
-  }
-  return null;
+  return flutterProjectRoot;
 }
-
-const flutterProjectRoot = await findFlutterProjectRoot();
-if ( !flutterProjectRoot )
-{
-  console.error( "Could not find Flutter project root" );
-  Deno.exit( 1 );
-}
-
-console.log( `Flutter project root: ${ flutterProjectRoot }` );
